@@ -22,7 +22,12 @@ Widget::Widget(QWidget *parent)
     connect(&process,SIGNAL(stateChanged(QProcess::ProcessState)),this,SLOT(onConsoleStateChange(QProcess::ProcessState)));
     connect(&process,SIGNAL(errorOccurred(QProcess::ProcessError)),this,SLOT(onConsoleError(QProcess::ProcessError)));
 
+#ifdef _WIN32
     process.setProgram("cmd");
+#else
+    process.setProgram("bash");
+#endif
+
     process.start();
 }
 
@@ -35,12 +40,16 @@ Widget::~Widget()
 
 void Widget::onExecute()
 {
-    QString command = QString("%1\n").arg(this->ui->lineEdit->text().trimmed());
+    QString command = this->ui->lineEdit->text().trimmed();
     QByteArray byteArray = command.toLocal8Bit();
+    byteArray.append('\n');
     int count = process.write(byteArray);
 
     if(count >= byteArray.length())
     {
+#ifndef _WIN32
+    this->ui->textEdit->append(QString("[%1]: %2").arg(currentUserName).arg(command));
+#endif
         this->ui->lineEdit->setText("");
     }
 }
